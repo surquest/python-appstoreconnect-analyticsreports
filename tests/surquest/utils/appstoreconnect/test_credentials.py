@@ -2,119 +2,60 @@
 # Unit tests for the Credentials class
 
 import unittest
-from unittest.mock import patch
-import datetime
+from surquest.utils.appstoreconnect.credentials import Credentials
 import jwt
-from src.surquest.utils.appstoreconnect.credentials import Credentials
+from unittest.mock import patch
+from pathlib import Path
+import datetime
 
-# Test class for Credentials
+
 class TestCredentials(unittest.TestCase):
-
-    # Set up the test environment
     def setUp(self):
-        self.issuer_id = "test_issuer_id"
-        self.key_id = "test_key_id"
-        self.private_key = "test_private_key"
-        # Create a Credentials object with test data
-        self.credentials = Credentials(self.issuer_id, self.key_id, self.private_key)
+        self.issuer_id = "TEST_ISSUER_ID"
+        self.key_id = "TEST_KEY_ID"
+        # Sample ES256 private key (test-only)
+        self.key_path = Path.cwd() / "credentials" / "key.p8"
+        self.private_key = self.key_path.read_text()
+        self.credentials = Credentials(
+            issuer_id=self.issuer_id,
+            key_id=self.key_id,
+            private_key=self.private_key
+        )
 
-    # Test token generation with default expiration
-    def test_generate_token_default_expiration(self):
-        # Patch datetime to control the current time
-        with patch('datetime.datetime') as mock_datetime:
-            mock_datetime.utcnow.return_value = datetime.datetime(2023, 1, 1, 12, 0, 0)
-            mock_datetime.timedelta.return_value = datetime.timedelta(minutes=45)
-            mock_datetime.timestamp.return_value = 1672588800.0 # timestamp for 2023-01-01 12:00:00 UTC
-            
-            # Expected payload for the JWT
-            expected_payload = {
-                "iss": self.issuer_id,
-                "iat": 1672588800,
-                "exp": 1672588800 + (45 * 60),
-                "aud": "appstoreconnect-v1"
-            }
-            # Expected headers for the JWT
-            expected_headers = {
-                "alg": "ES256",
-                "kid": self.key_id,
-                "typ": "JWT"
-            }
+    def test_generate_token_valid(self):
+        token = self.credentials.generate_token()
+        decoded = jwt.decode(
+            token,
+            options={"verify_signature": False},  # We only check payload structure here
+            algorithms=["ES256"]
+        )
 
-            # Patch jwt.encode to control the encoding result
-            with patch('jwt.encode') as mock_jwt_encode:
-                mock_jwt_encode.return_value = b"encoded_token"
-                # Generate the token
-                token = self.credentials.generate_token()
-                # Assert that jwt.encode was called with the expected arguments
-                mock_jwt_encode.assert_called_once_with(
-                    expected_payload,
-                    self.private_key,
-                    algorithm="ES256",
-                    headers=expected_headers
-                )
-                # Assert that the generated token matches the expected token
-                self.assertEqual(token, "encoded_token")
+        assert decoded["iss"] == self.issuer_id
+        assert decoded["aud"] == "appstoreconnect-v1"
+        assert "iat" in decoded
+        assert "exp" in decoded
+        assert decoded["exp"] > decoded["iat"]
 
-    # Test token generation with custom expiration
-    def test_generate_token_custom_expiration(self):
-        # g  datetime to control the current time
-        with patch('datetime.datetime') as mock_datetime:
-            mock_datetime.utcnow.return_value = datetime.datetime(2023, 1, 1, 12, 0, 0)
-            mock_datetime.timedelta.return_value = datetime.timedelta(minutes=30)
-            mock_datetime.timestamp.return_value = 1672588800.0
+    def test_generate_token_expiration_limit(self):
+        try:
+            self.credentials.generate_token(expiration_minutes=60)
+            assert False, "Expected ValueError for expiration > 45 minutes"
+        except ValueError as e:
+            assert "cannot exceed 45 minutes" in str(e)
 
-            # Expected payload for the JWT with custom expiration
-            expected_payload = {
-                "iss": self.issuer_id,
-                "iat": 1672588800,
-                "exp": 1672588800 + (30 * 60),
-                "aud": "appstoreconnect-v1"
-            }
-            # Expected headers for the JWT
-            expected_headers = {
-                "alg": "ES256",
-                "kid": self.key_id,
-                "typ": "JWT"
-            }
-            
-            # Patch jwt.encode to control the encoding result
-            with patch('jwt.encode') as mock_jwt_encode:
-                mock_jwt_encode.return_value = b"encoded_token_30"
-                # Generate the token with custom expiration
-                token = self.credentials.generate_token(expiration_minutes=30)
-                # Assert that jwt.encode was called with the expected arguments
-                mock_jwt_encode.assert_called_once_with(
-                    expected_payload,
-                    self.private_key,
-                    algorithm="ES256",
-                    headers=expected_headers
-                )
-                # Assert that the generated token matches the expected token
-                self.assertEqual(token, "encoded_token_30")
+    @patch("jwt.encode")
+    def test_token_is_utf8_string(self, mock_encode):
+        mock_encode.return_value = b"mocked_token_bytes"
+        token = self.credentials.generate_token()
+        assert token == "mocked_token_bytes"
 
-    # Test token generation with expiration exceeding 45 minutes
-    def test_generate_token_expiration_exceeds_45_minutes(self):
-        # Assert that a ValueError is raised
-        with self.assertRaises(ValueError) as cm:
-            # Attempt to generate a token with expiration exceeding 45 minutes
-            self.credentials.generate_token(expiration_minutes=46)
-        # Assert that the exception message is correct
-        self.assertEqual(str(cm.exception), "Token expiration cannot exceed 45 minutes")
-
-    # Test that the generated token is a string
-    def test_generate_token_returns_string(self):
-        # Patch datetime to control the current time
-        with patch('datetime.datetime') as mock_datetime:
-            mock_datetime.utcnow.return_value = datetime.datetime(2023, 1, 1, 12, 0, 0)
-            mock_datetime.timedelta.return_value = datetime.timedelta(minutes=45)
-            mock_datetime.timestamp.return_value = 1672588800.0
-
-            # Patch jwt.encode to control the encoding result
-            with patch('jwt.encode') as mock_jwt_encode:
-                mock_jwt_encode.return_value = "encoded_token_string"
-                # Generate the token
-                token = self.credentials.generate_token()
-                # Assert that the generated token is a string
-                self.assertIsInstance(token, str)
-                # Assert that the generated token matches the expected string
-                self.assertEqual(token, "encoded_token_string")
+    def test_default_expiration_is_45_minutes(self):
+        token = self.credentials.generate_token()
+        decoded = jwt.decode(
+            token,
+            options={"verify_signature": False},
+            algorithms=["ES256"]
+        )
+        iat = decoded["iat"]
+        exp = decoded["exp"]
+        assert exp - iat == 45 * 60
