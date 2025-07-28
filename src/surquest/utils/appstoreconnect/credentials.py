@@ -1,7 +1,6 @@
 import jwt
 import datetime
 
-
 class Credentials:
     """Handles the creation and generation of JWT tokens for App Store Connect API."""
     def __init__(self, issuer_id: str, key_id: str, private_key: str):
@@ -29,33 +28,31 @@ class Credentials:
 
         # Set the token's issue and expiration times.
         now = datetime.datetime.utcnow()
-        exp = now + datetime.timedelta(minutes=expiration_minutes)
 
         # Define the token headers.
         headers = {
-            "alg": "ES256",  # Algorithm used for signing
-            "kid": self.key_id,  # Key ID
-            "typ": "JWT"  # Type of token
+            "alg": "ES256",
+            "kid": self.key_id,
+            "typ": "JWT"
         }
 
         # Define the token payload.
         payload = {
             "iss": self.issuer_id,  # Issuer ID
-            "iat": int(now.timestamp()),  # Issued at timestamp
-            "exp": int(exp.timestamp()),  # Expiration timestamp
+            "iat": now,
+            "exp": now + datetime.timedelta(minutes=20),
             "aud": "appstoreconnect-v1"  # Audience (App Store Connect API)
         }
 
         # Encode the token using the payload, private key, algorithm, and headers.
         token = jwt.encode(
-            payload,
-            self.private_key,
-            algorithm="ES256",
+            payload, 
+            self.private_key, 
+            algorithm="ES256", 
             headers=headers
         )
 
-        # PyJWT returns bytes for some versions, decode to utf-8 if necessary.
         if isinstance(token, bytes):
-            token = token.decode("utf-8")
+            token = token.decode('utf-8')
 
         return token

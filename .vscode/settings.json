@@ -1,7 +1,9 @@
 {
     "IDX.aI.enableInlineCompletion": true,
     "IDX.aI.enableCodebaseIndexing": true,
-    "python.testing.pytestArgs": [],
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
     "terminal.integrated.env.linux": {
         "PYTHONPATH": "${workspaceFolder}/src"
     },
