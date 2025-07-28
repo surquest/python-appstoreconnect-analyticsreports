@@ -1,0 +1,81 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/28.0.6 Chrome/138.0.7204.100 Electron/37.2.3 Safari/537.36" version="28.0.6">
+  <diagram name="Page-1" id="qFGEUvCR5VXOkbqSyqfi">
+    <mxGraphModel dx="1412" dy="827" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="YpAfEXLtca7DYCPEU3wD-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="YpAfEXLtca7DYCPEU3wD-2" target="YpAfEXLtca7DYCPEU3wD-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <UserObject label="&lt;b&gt;Read report requests&lt;/b&gt;" link="https://developer.apple.com/documentation/appstoreconnectapi/get-v1-apps-_id_-analyticsreportrequests" id="YpAfEXLtca7DYCPEU3wD-2">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+            <mxGeometry x="350" y="310" width="120" height="60" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="YpAfEXLtca7DYCPEU3wD-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="YpAfEXLtca7DYCPEU3wD-4" target="YpAfEXLtca7DYCPEU3wD-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="YpAfEXLtca7DYCPEU3wD-4" value="app_id" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="150" y="310" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="YpAfEXLtca7DYCPEU3wD-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="YpAfEXLtca7DYCPEU3wD-6" target="YpAfEXLtca7DYCPEU3wD-16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <UserObject label="&lt;b&gt;Read reports for a specific request&lt;/b&gt;" link="https://developer.apple.com/documentation/appstoreconnectapi/get-v1-analyticsreportrequests-_id_-reports" id="YpAfEXLtca7DYCPEU3wD-6">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+            <mxGeometry x="350" y="500" width="120" height="60" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="YpAfEXLtca7DYCPEU3wD-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="YpAfEXLtca7DYCPEU3wD-7" target="YpAfEXLtca7DYCPEU3wD-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="YpAfEXLtca7DYCPEU3wD-7" value="analytics_report_request_id" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="305" y="410" width="210" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="YpAfEXLtca7DYCPEU3wD-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="YpAfEXLtca7DYCPEU3wD-12" target="YpAfEXLtca7DYCPEU3wD-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="YpAfEXLtca7DYCPEU3wD-12" value="&lt;div&gt;filter[category]&lt;/div&gt;&lt;div&gt;filter[name]&lt;/div&gt;" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fixedSize=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="610" y="500" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="YpAfEXLtca7DYCPEU3wD-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="YpAfEXLtca7DYCPEU3wD-13" target="YpAfEXLtca7DYCPEU3wD-20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <UserObject label="&lt;b&gt;Read a list of instances of a report&lt;/b&gt;" link="https://developer.apple.com/documentation/appstoreconnectapi/get-v1-analyticsreports-_id_-instances" id="YpAfEXLtca7DYCPEU3wD-13">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+            <mxGeometry x="350" y="690" width="120" height="60" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="YpAfEXLtca7DYCPEU3wD-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="YpAfEXLtca7DYCPEU3wD-16" target="YpAfEXLtca7DYCPEU3wD-13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="YpAfEXLtca7DYCPEU3wD-16" value="analytics_report_id" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="350" y="590" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="YpAfEXLtca7DYCPEU3wD-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="YpAfEXLtca7DYCPEU3wD-18" target="YpAfEXLtca7DYCPEU3wD-13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="YpAfEXLtca7DYCPEU3wD-18" value="&lt;div&gt;filter[granularity]&lt;/div&gt;&lt;div&gt;&lt;div&gt;filter[processingDate]&lt;/div&gt;&lt;/div&gt;" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fixedSize=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="610" y="690" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="YpAfEXLtca7DYCPEU3wD-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="YpAfEXLtca7DYCPEU3wD-20" target="YpAfEXLtca7DYCPEU3wD-22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="YpAfEXLtca7DYCPEU3wD-20" value="analytics_report_instance_id" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="320" y="800" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="YpAfEXLtca7DYCPEU3wD-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="YpAfEXLtca7DYCPEU3wD-22" target="YpAfEXLtca7DYCPEU3wD-24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <UserObject label="&lt;b&gt;Read the segments for a report&lt;/b&gt;" link="https://developer.apple.com/documentation/appstoreconnectapi/get-v1-analyticsreportinstances-_id_-segments" id="YpAfEXLtca7DYCPEU3wD-22">
+          <mxCell style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+            <mxGeometry x="350" y="920" width="120" height="60" as="geometry" />
+          </mxCell>
+        </UserObject>
+        <mxCell id="YpAfEXLtca7DYCPEU3wD-24" value="" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;fillColor=#505050;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.users.csv_file;" vertex="1" parent="1">
+          <mxGeometry x="380.5" y="1030" width="59" height="43" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
