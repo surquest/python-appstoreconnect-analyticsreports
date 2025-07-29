@@ -1,4 +1,8 @@
 {
-    "recommendations": [],
+    "recommendations": [
+        "ms-python.python",
+        "ms-toolsai.jupyter",
+        
+    ],
     "unwantedRecommendations": []
 }
