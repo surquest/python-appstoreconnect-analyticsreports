@@ -19,12 +19,12 @@ class Credentials:
         """
         Generates a JWT token for App Store Connect API.
         
-        :param expiration_minutes: Token expiration time in minutes (max 360)
+        :param expiration_minutes: Token expiration time in minutes (max 45)
         :return: Signed JWT token string
         """
-        # App Store Connect tokens have a maximum expiration of 360 minutes.
-        if expiration_minutes > 360:
-            raise ValueError("Token expiration cannot exceed 360 minutes")
+        # App Store Connect tokens have a maximum expiration of 45 minutes.
+        if expiration_minutes > 45:
+            raise ValueError("Token expiration cannot exceed 45 minutes")
 
         # Set the token's issue and expiration times.
         now = datetime.datetime.now(datetime.UTC)
@@ -39,7 +39,7 @@ class Credentials:
         # Define the token payload.
         payload = {
             "iss": self.issuer_id,  # Issuer ID
-            "iat": now - datetime.timedelta(minutes=expiration_minutes),
+            "iat": now,
             "exp": now + datetime.timedelta(minutes=expiration_minutes),
             "aud": "appstoreconnect-v1"  # Audience (App Store Connect API)
         }

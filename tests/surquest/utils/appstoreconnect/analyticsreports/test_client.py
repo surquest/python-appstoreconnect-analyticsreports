@@ -29,15 +29,15 @@ class TestClient(unittest.TestCase):
             ))
         cls.test_app_id = APP_ID
 
-    # def test_read_report_requests(self):
+    def test_read_report_requests(self):
 
-    #     response = self.client.read_report_requests(self.test_app_id)
+        response = self.client.read_report_requests(self.test_app_id)
         
-    #     assert isinstance(response, dict), \
-    #         f"Response instance is {response.__class__.__name__}"
+        assert isinstance(response, dict), \
+            f"Response instance is {response.__class__.__name__}"
         
-    #     assert "data" in response, \
-    #         f"No key `data` in the response"
+        assert "data" in response, \
+            f"No key `data` in the response"
 
     # def test_read_report_for_specific_request(self):
         
