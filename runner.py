@@ -1,7 +1,7 @@
 import json
 from surquest.utils.appstoreconnect.credentials import Credentials
 from surquest.utils.appstoreconnect.analyticsreports.client import Client
-
+from surquest.utils.appstoreconnect.analyticsreports.enums.category import Category
 from pathlib import Path
 
 key_path = Path.cwd() / "credentials" / "key.p8"
@@ -10,6 +10,8 @@ private_key = key_path.read_text()
 ISSUER_ID = "69a6de80-fd44-47e3-e053-5b8c7c11a4d1"
 KEY_ID = "5WDUV3USAU"
 APP_ID = "6451202232"
+CATEGORY = Category.APP_USAGE
+# REPORT_NAME = "App Crashes Expanded"
 
 credentials = Credentials(
     issuer_id=ISSUER_ID, # 36-character issuer ID
@@ -23,37 +25,32 @@ client = Client(credentials)
 
 print("--- token ---")
 print(credentials.generate_token())
-print("--- --- ---")
+print("-------------")
 
-# # Step 1: Request a report
-# try:
-#     report_request = client.request_reports(app_id = APP_ID)
-#     request_id = report_request["data"]["id"]
-# except Exception as e:
-#     print(f"Error requesting report: {e}")
-    
-#     report_requests = client.read_report_requests(app_id=APP_ID)
-#     # print(json.dumps(report_requests, indent=4))
-#     request_id = report_requests.get("data")[0].get("id")
 
-# print(f"Request ID: {request_id}")
+#1A Read Report Requests
+report_requests = client.read_report_requests(app_id=APP_ID)
+print(json.dumps(report_requests, indent=2))
 
-# # Step 2: Poll for report status
-# while True:
-#     reports = client.read_reports_for_specific_request(request_id)
-#     if reports["data"]:
-#         print("Report ready!")
-#         print(json.dumps(reports, indent=4))
-#         break
-#     print("Waiting for report...")
-#     time.sleep(10)
+#1B Get report ID
+report_request_id = report_requests.get("data")[0].get("id")
+print(report_request_id)
 
-# # Step 3: Get report instances
-# report_id = reports["data"][0]["id"]
-# instances = client.list_instances_of_report(report_id)
-# download_url = instances["data"][0]["attributes"]["downloadUrl"]
+#2A Read Report
+report = client.read_report_for_specific_request(
+    request_id=report_request_id,
+    params={
+        "filter[category]": CATEGORY.value,
+        # "filter[name]": REPORT_NAME
+    }
+)
+print(json.dumps(report, indent=2))
+report_id = report.get("data")[0].get("id")
+print(report_id)
 
-# # Step 4: Download report
-# report_response = requests.get(download_url)
-# with open("report.gz", "wb") as f:
-#     f.write(report_response.content)
+#3A Read Report Instances
+instances = client.read_list_of_instances_of_report(report_id=report_id)
+print(json.dumps(instances, indent=2))
+instance_id = instances.get("data")[0].get("id")
+print(instance_id)
+#4A Read Report Segments

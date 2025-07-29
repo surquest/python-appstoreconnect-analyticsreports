@@ -40,7 +40,7 @@ class Credentials:
         payload = {
             "iss": self.issuer_id,  # Issuer ID
             "iat": now,
-            "exp": now + datetime.timedelta(minutes=20),
+            "exp": now + datetime.timedelta(minutes=expiration_minutes),
             "aud": "appstoreconnect-v1"  # Audience (App Store Connect API)
         }
 

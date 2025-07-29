@@ -58,4 +58,5 @@ class TestCredentials(unittest.TestCase):
         )
         iat = decoded["iat"]
         exp = decoded["exp"]
-        assert exp - iat == 45 * 60
+        assert exp - iat == 45 * 60, \
+            f"Difference between expected and actual expiration is {exp - iat} seconds"
