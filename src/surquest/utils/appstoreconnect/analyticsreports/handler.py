@@ -1,20 +1,7 @@
 import warnings
 from typing import Any
 
-
-class PayloadFormatError(ValueError):
-    """Raised when the payload format is invalid (e.g. missing or malformed 'data' key)."""
-    pass
-
-
-class NoValidIdsError(ValueError):
-    """Raised when no valid IDs are found in the payload."""
-    pass
-
-
-class NoValidUrlsError(ValueError):
-    """Raised when no valid URLs are found in the payload."""
-    pass
+from .errors import PayloadFormatError, NoValidIdsError, NoValidUrlsError
 
 
 class Handler:
@@ -47,10 +34,11 @@ class Handler:
 
         return ids
 
+
     @staticmethod
-    def extract_urls(payload: dict) -> list[str]:
+    def extract_attribute_values(payload: dict, attribute: str) -> list[str]:
         """
-        Extracts a list of 'url' values from each item's attributes in the payload.
+        Extracts a list of 'attribute' values from each item's attributes in the payload.
 
         Raises:
             PayloadFormatError: if 'data' is missing or not a list.
@@ -72,14 +60,14 @@ class Handler:
                 warnings.warn(f"Skipped: missing or malformed 'attributes' in item: {item}")
                 continue
 
-            url = attributes.get("url")
+            url = attributes.get(attribute)
             if not url:
-                warnings.warn(f"Skipped: missing or empty 'url' in attributes: {attributes}")
+                warnings.warn(f"Skipped: missing or empty `{attribute}` in attributes: {attributes}")
                 continue
 
             urls.append(url)
 
         if not urls:
-            raise NoValidUrlsError("No valid URLs found in the payload.")
+            raise NoValidUrlsError(f"No valid `{attribute}` found in the payload.")
 
         return urls
