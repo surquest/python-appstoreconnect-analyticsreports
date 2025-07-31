@@ -1,59 +1,63 @@
 import jwt
-import datetime
+from datetime import datetime, timedelta
+from typing import Optional
 
 class Credentials:
-    """Handles the creation and generation of JWT tokens for App Store Connect API."""
+    """Handles creation and signing of JWT tokens for the App Store Connect API."""
+
+    MAX_EXPIRATION_MINUTES = 20
+
     def __init__(self, issuer_id: str, key_id: str, private_key: str):
         """
-        Initializes the Credentials object with required information.
-        
-        :param issuer_id: The issuer ID from App Store Connect.
-        :param key_id: The key ID for the API key.
-        :param private_key: The private key content.
+        Initialize the Credentials object.
+
+        Args:
+            issuer_id (str): The issuer ID from App Store Connect.
+            key_id (str): The key ID for the API key.
+            private_key (str): The private key (P8 format) used for signing the token.
         """
+        if not issuer_id or not key_id or not private_key:
+            raise ValueError("issuer_id, key_id, and private_key are all required.")
+        
         self.issuer_id = issuer_id
         self.key_id = key_id
         self.private_key = private_key
 
-    def generate_token(self, expiration_minutes: int = 45) -> str:
+    def generate_token(self, expiration_minutes: int = 20) -> str:
         """
-        Generates a JWT token for App Store Connect API.
-        
-        :param expiration_minutes: Token expiration time in minutes (max 45)
-        :return: Signed JWT token string
+        Generate a signed JWT token.
+
+        Args:
+            expiration_minutes (int, optional): Token lifetime in minutes (max 20). Defaults to 20.
+
+        Returns:
+            str: The signed JWT token string.
+
+        Raises:
+            ValueError: If expiration exceeds the allowed maximum.
         """
-        # App Store Connect tokens have a maximum expiration of 45 minutes.
-        if expiration_minutes > 45:
-            raise ValueError("Token expiration cannot exceed 45 minutes")
+        if not (0 < expiration_minutes <= self.MAX_EXPIRATION_MINUTES):
+            raise ValueError(f"Token expiration must be between 1 and {self.MAX_EXPIRATION_MINUTES} minutes.")
 
-        # Set the token's issue and expiration times.
-        now = datetime.datetime.now(datetime.UTC)
+        now = datetime.utcnow()
+        exp_time = now + timedelta(minutes=expiration_minutes)
 
-        # Define the token headers.
+        payload = {
+            "iss": self.issuer_id,
+            "iat": int(now.timestamp()),
+            "exp": int(exp_time.timestamp()),
+            "aud": "appstoreconnect-v1"
+        }
+
         headers = {
             "alg": "ES256",
             "kid": self.key_id,
             "typ": "JWT"
         }
 
-        # Define the token payload.
-        payload = {
-            "iss": self.issuer_id,  # Issuer ID
-            "iat": now,
-            "exp": now + datetime.timedelta(minutes=expiration_minutes),
-            "aud": "appstoreconnect-v1"  # Audience (App Store Connect API)
-        }
-
-        # Encode the token using the payload, private key, algorithm, and headers.
-        token = jwt.encode(
-            payload, 
-            self.private_key, 
-            algorithm="ES256", 
+        return jwt.encode(
+            payload=payload,
+            key=self.private_key,
+            algorithm="ES256",
             headers=headers
         )
-
-        if isinstance(token, bytes):
-            token = token.decode('utf-8')
-
-        return token
-
