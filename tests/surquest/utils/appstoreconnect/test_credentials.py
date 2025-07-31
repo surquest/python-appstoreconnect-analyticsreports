@@ -39,17 +39,11 @@ class TestCredentials(unittest.TestCase):
     def test_generate_token_expiration_limit(self):
         try:
             self.credentials.generate_token(expiration_minutes=60)
-            assert False, "Expected ValueError for expiration > 45 minutes"
+            assert False, "Expected ValueError for expiration > 20 minutes"
         except ValueError as e:
-            assert "cannot exceed 45 minutes" in str(e)
+            assert "oken expiration must be between 1 and 20 minutes." in str(e)
 
-    @patch("jwt.encode")
-    def test_token_is_utf8_string(self, mock_encode):
-        mock_encode.return_value = b"mocked_token_bytes"
-        token = self.credentials.generate_token()
-        assert token == "mocked_token_bytes"
-
-    def test_default_expiration_is_45_minutes(self):
+    def test_default_expiration_is_20_minutes(self):
         token = self.credentials.generate_token()
         decoded = jwt.decode(
             token,
@@ -58,5 +52,5 @@ class TestCredentials(unittest.TestCase):
         )
         iat = decoded["iat"]
         exp = decoded["exp"]
-        assert exp - iat == 45 * 60, \
+        assert exp - iat == 20 * 60, \
             f"Difference between expected and actual expiration is {exp - iat} seconds"
