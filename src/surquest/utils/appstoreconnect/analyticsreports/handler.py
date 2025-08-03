@@ -14,10 +14,8 @@ class Handler:
             PayloadFormatError: if 'data' is missing or not a list.
             NoValidIdsError: if no valid IDs are found in the payload.
         """
-        data = payload.get("data")
-
-        if not isinstance(data, list):
-            raise PayloadFormatError(f"'data' key must be a list in the payload: {payload}")
+        
+        data = payload
 
         ids = []
         for item in data:
@@ -48,11 +46,8 @@ class Handler:
             PayloadFormatError: if 'data' is missing or not a list.
             NoValidUrlsError: if no valid URLs are found in the payload.
         """
-        data = payload.get("data")
 
-        if not isinstance(data, list):
-            raise PayloadFormatError(f"'data' key must be a list in the payload: {payload}")
-
+        data = payload
         out = []
         for item in data:
             if not isinstance(item, dict):

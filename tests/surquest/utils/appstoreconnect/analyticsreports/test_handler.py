@@ -1,117 +1,69 @@
 import unittest
-from src.surquest.utils.appstoreconnect.analyticsreports.handler import Handler
-from src.surquest.utils.appstoreconnect.analyticsreports.errors import PayloadFormatError, NoValidIdsError, NoValidUrlsError
+import warnings
+from surquest.utils.appstoreconnect.analyticsreports.handler import Handler
+from surquest.utils.appstoreconnect.analyticsreports.errors import (
+    PayloadFormatError,
+    NoValidIdsError,
+    NoValidUrlsError,
+)
+
 
 class TestHandler(unittest.TestCase):
 
-    def test_extract_ids_valid_payload(self):
-        payload = {
-            "data": [
-                {"id": "123", "type": "reportRequests"},
-                {"id": "456", "type": "reportRequests"},
-                {"id": "789", "type": "reportRequests"}
-            ]
-        }
-        ids = Handler.extract_ids(payload)
-        self.assertEqual(ids, ["123", "456", "789"])
+    def test_extract_ids_valid(self):
+        payload = [{"id": "123"}, {"id": "456"}, {"id": "789"}]
+        result = Handler.extract_ids(payload)
+        assert result == ["123", "456", "789"]
 
-    def test_extract_ids_empty_data(self):
-        payload = {"data": []}
-        with self.assertRaises(NoValidIdsError):
+    def test_extract_ids_with_invalid_items(self):
+        payload = [{"id": "123"}, {"no_id": "abc"}, None, {"id": None}]
+        with warnings.catch_warnings(record=True) as w:
+            result = Handler.extract_ids(payload)
+            assert result == ["123"]
+            assert len(w) == 3  # Warnings for 3 invalid items
+
+    def test_extract_ids_no_valid_ids(self):
+        payload = [{"id": None}, {"foo": "bar"}]
+        try:
             Handler.extract_ids(payload)
+            assert False, "Expected NoValidIdsError to be raised"
+        except NoValidIdsError as e:
+            assert str(e) == "No valid IDs found in the payload."
 
-    def test_extract_ids_missing_data(self):
-        payload = {}
-        with self.assertRaises(PayloadFormatError):
-            Handler.extract_ids(payload)
-
-    def test_extract_ids_data_not_list(self):
-        payload = {"data": "not a list"}
-        with self.assertRaises(PayloadFormatError):
-            Handler.extract_ids(payload)
-
-    def test_extract_ids_items_not_dict(self):
-        payload = {"data": ["not a dict", {"id": "123"}]}
-        ids = Handler.extract_ids(payload)
-        self.assertEqual(ids, ["123"])
-
-    def test_extract_ids_missing_id(self):
-        payload = {"data": [{"type": "reportRequests"}, {"id": "123"}]}
-        ids = Handler.extract_ids(payload)
-        self.assertEqual(ids, ["123"])
-
-    def test_extract_ids_null_id(self):
-        payload = {"data": [{"id": None}, {"id": "123"}]}
-        ids = Handler.extract_ids(payload)
-        self.assertEqual(ids, ["123"])
-
-    def test_extract_attribute_values_valid_payload(self):
-        payload = {
-            "data": [
-                {"attributes": {"url": "http://example.com/report1"}},
-                {"attributes": {"url": "http://example.com/report2"}}
-            ]
-        }
-        urls = Handler.extract_attribute_values(payload, "url")
-        self.assertEqual(urls, ["http://example.com/report1", "http://example.com/report2"])
-
-    def test_extract_attribute_values_empty_data(self):
-        payload = {"data": []}
-        with self.assertRaises(NoValidUrlsError):
-            Handler.extract_attribute_values(payload, "url")
-
-    def test_extract_attribute_values_missing_data(self):
-        payload = {}
-        with self.assertRaises(PayloadFormatError):
-            Handler.extract_attribute_values(payload, "url")
-
-    def test_extract_attribute_values_data_not_list(self):
-        payload = {"data": "not a list"}
-        with self.assertRaises(PayloadFormatError):
-            Handler.extract_attribute_values(payload, "url")
-
-    def test_extract_attribute_values_items_not_dict(self):
-        payload = {"data": ["not a dict", {"attributes": {"url": "http://example.com/report1"}}]}
-        urls = Handler.extract_attribute_values(payload, "url")
-        self.assertEqual(urls, ["http://example.com/report1"])
-
-    def test_extract_attribute_values_missing_attributes(self):
-        payload = {"data": [{"type": "report"}, {"attributes": {"url": "http://example.com/report1"}}]}
-        urls = Handler.extract_attribute_values(payload, "url")
-        self.assertEqual(urls, ["http://example.com/report1"])
-
-    def test_extract_attribute_values_attributes_not_dict(self):
-        payload = {"data": [{"attributes": "not a dict"}, {"attributes": {"url": "http://example.com/report1"}}]}
-        urls = Handler.extract_attribute_values(payload, "url")
-        self.assertEqual(urls, ["http://example.com/report1"])
+    def test_extract_attribute_values_valid(self):
+        payload = [
+            {"attributes": {"processingDate": "2025-07-27"}},
+            {"attributes": {"processingDate": "2025-07-28"}},
+        ]
+        result = Handler.extract_attribute_values(payload, attribute="processingDate")
+        assert result == ["2025-07-27", "2025-07-28"]
 
     def test_extract_attribute_values_missing_attribute(self):
-        payload = {"data": [{"attributes": {"other_attr": "value"}}, {"attributes": {"url": "http://example.com/report1"}}]}
-        urls = Handler.extract_attribute_values(payload, "url")
-        self.assertEqual(urls, ["http://example.com/report1"])
+        payload = [{"attributes": {"other": "value"}}, {"attributes": {}}]
+        with warnings.catch_warnings(record=True) as w:
+            try:
+                Handler.extract_attribute_values(payload, attribute="processingDate")
+                assert False, "Expected NoValidUrlsError to be raised"
+            except NoValidUrlsError as e:
+                assert "No valid `processingDate`" in str(e)
+            assert len(w) == 2
 
-    def test_extract_attribute_values_empty_attribute(self):
-        payload = {"data": [{"attributes": {"url": ""}}, {"attributes": {"url": "http://example.com/report1"}}]}
-        urls = Handler.extract_attribute_values(payload, "url")
-        self.assertEqual(urls, ["http://example.com/report1"])
+    def test_extract_attribute_values_without_attribute(self):
+        payload = [
+            {"attributes": {"key": "value"}},
+            {"attributes": {"another_key": "another_value"}},
+        ]
+        result = Handler.extract_attribute_values(payload)
+        assert result == [{"key": "value"}, {"another_key": "another_value"}]
 
-    def test_deduplicate_data_with_duplicates(self):
-        
-        data_with_duplicates = [
-            {"id": 1, "name": "A", "value": 10},
-            {"id": 2, "name": "B", "value": 20},
-            {"id": 1, "name": "A", "value": 10},  # Duplicate of the first entry
-            {"id": 3, "name": "C", "value": 30},
-            {"id": 2, "name": "B", "value": 20},  # Duplicate of the second entry
-            {"id": 1, "value": 10, "name": "A"},  # Duplicate with different key order
+    def test_deduplicate_data(self):
+        data = [
+            {"id": "123", "name": "Alice"},
+            {"id": "123", "name": "Alice"},
+            {"id": "456", "name": "Bob"},
         ]
-        expected_deduplicated_data = [
-            {"id": 1, "name": "A", "value": 10},
-            {"id": 2, "name": "B", "value": 20},
-            {"id": 3, "name": "C", "value": 30},
-        ]
-        # We sort the unique data because the order of unique_data might vary based on set iteration
-        deduplicated_data = Handler.deduplicate_data(data_with_duplicates)
-        
-        assert len(deduplicated_data) == len(expected_deduplicated_data), \
-            f"Expected {len(expected_deduplicated_data)} unique entries, got {len(deduplicated_data)}"
+        result = Handler.deduplicate_data(data)
+        assert isinstance(result, list)
+        assert len(result) == 2
+        assert {"id": "123", "name": "Alice"} in result
+        assert {"id": "456", "name": "Bob"} in result

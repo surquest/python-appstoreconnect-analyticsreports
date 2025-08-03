@@ -2,57 +2,72 @@ import unittest
 from pathlib import Path
 from surquest.utils.appstoreconnect.credentials import Credentials
 from surquest.utils.appstoreconnect.analyticsreports.client import Client
-from surquest.utils.appstoreconnect.analyticsreports.enums.category import Category
-from surquest.utils.appstoreconnect.analyticsreports.enums.granularity import Granularity
+from surquest.utils.appstoreconnect.analyticsreports.enums.granularity import (
+    Granularity,
+)
+from surquest.utils.appstoreconnect.analyticsreports.enums.report_name import ReportName
+
 
 ISSUER_ID = "69a6de80-fd44-47e3-e053-5b8c7c11a4d1"
 KEY_ID = "5WDUV3USAU"
 PRIVATE_KEY_PATH = Path.cwd() / "credentials" / "key.p8"
 PRIVATE_KEY = PRIVATE_KEY_PATH.read_text()
-APP_ID = "6451202232"
-CATEGORY = Category.APP_USAGE
-REPORT_NAME = "App Store Installation and Deletion Detailed"
+APP_ID = "950949627"
+REPORT_NAME = ReportName.APP_STORE_INSTALLATION_AND_DELETION_STANDARD
 GRANULARITY = Granularity.DAILY
 DATE = "2025-07-27"
+
 
 class TestClientIntegration(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.client = Client(credentials=Credentials(
-            issuer_id=ISSUER_ID,
-            key_id=KEY_ID,
-            private_key=PRIVATE_KEY
-        ))
+        cls.client = Client(
+            credentials=Credentials(
+                issuer_id=ISSUER_ID, key_id=KEY_ID, private_key=PRIVATE_KEY
+            )
+        )
         cls.test_app_id = APP_ID
 
     def test_read_report_requests(self):
         response = self.client.read_report_requests(self.test_app_id)
-        assert isinstance(response, dict), f"Expected dict, got {type(response)}"
-        assert "data" in response, "Response does not contain 'data' key"
+        assert isinstance(response, list), f"Expected list, got {type(response)}"
+        if response:
+            assert (
+                "id" in response[0]
+            ), "Each report request should contain an 'id' field"
 
     def test_read_report_for_specific_request(self):
-        response = self.client.read_report_requests(self.test_app_id)
-        request_ids = [item["id"] for item in response.get("data", [])]
-        assert request_ids, "No report requests found"
 
-        report_id = request_ids[0]
-        report_response = self.client.read_report_for_specific_request(report_id)
-        assert isinstance(report_response, dict)
-        assert "data" in report_response
+        report_requests = self.client.read_report_requests(self.test_app_id)
+        assert isinstance(
+            report_requests, list
+        ), f"Expected list, got {type(report_requests)}"
+        assert report_requests, "No report requests found"
+
+        request_id = report_requests[0]["id"]
+        report_response = self.client.read_report_for_specific_request(request_id)
+        assert isinstance(
+            report_response, list
+        ), f"Expected list, got {type(report_response)}"
+        if report_response:
+            assert (
+                "id" in report_response[0]
+            ), "Report item should contain an 'id' field"
 
     def test_read_list_of_instances_of_report(self):
         report_requests = self.client.read_report_requests(self.test_app_id)
-        request_ids = [item["id"] for item in report_requests.get("data", [])]
-        assert request_ids, "No report requests found"
+        assert report_requests, "No report requests found"
 
-        report_response = self.client.read_report_for_specific_request(request_ids[0])
-        report_ids = [item["id"] for item in report_response.get("data", [])]
-        assert report_ids, "No reports found for request"
+        request_id = report_requests[0]["id"]
+        report_response = self.client.read_report_for_specific_request(request_id)
+        assert report_response, "No reports found for the given request"
 
-        instances = self.client.read_list_of_instances_of_report(report_ids[0])
-        assert isinstance(instances, dict)
-        assert "data" in instances
+        report_id = report_response[0]["id"]
+        instances = self.client.read_list_of_instances_of_report(report_id)
+        assert isinstance(instances, list), f"Expected list, got {type(instances)}"
+        if instances:
+            assert "id" in instances[0], "Instance item should contain an 'id' field"
 
     def test_download_report_to_dicts_with_invalid_url(self):
         data = self.client.download_report_to_dicts("https://invalid-url.com/report.gz")
@@ -62,11 +77,11 @@ class TestClientIntegration(unittest.TestCase):
         data = self.client.get_data(
             app_id=self.test_app_id,
             report_name=REPORT_NAME,
-            category=CATEGORY,
             granularity=GRANULARITY,
-            dates={DATE}
+            dates={DATE},
         )
-        assert isinstance(data, list)
+        assert isinstance(data, list), f"Expected list, got {type(data)}"
         if data:
-            assert isinstance(data[0], dict)
-
+            assert isinstance(
+                data[0], dict
+            ), f"Expected dict in data rows, got {type(data[0])}"
