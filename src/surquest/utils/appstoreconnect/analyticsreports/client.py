@@ -164,7 +164,7 @@ class Client:
             reports.extend(self.read_report_for_specific_request(request_id, params=query_params))
         return reports
 
-    def get_data(self, app_id: str, report_name: ReportName, granularity: Granularity, dates: Optional[Set[str]] = None) -> List[Dict[str, str]]:
+    def get_data(self, app_id: str, report_name: ReportName, granularity: Granularity = Granularity.DAILY, dates: Optional[Set[str]] = None) -> List[Dict[str, str]]:
         dates = dates or set()
         data: List[Dict[str, str]] = []
 
@@ -179,7 +179,8 @@ class Client:
             segment_data = self.download_report_to_dicts(url)
             if segment_data:
                 data.extend(segment_data)
-        return data
+        
+        return Handler.deduplicate_data(data)
 
     # ----------------- Private Steps for get_data -----------------
 

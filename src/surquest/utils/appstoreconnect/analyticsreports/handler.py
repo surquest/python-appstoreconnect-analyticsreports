@@ -1,7 +1,11 @@
+import os
+import csv
+import json
 import warnings
 from typing import Any
 
 from .errors import PayloadFormatError, NoValidIdsError, NoValidUrlsError
+from .logger import logger
 
 
 class Handler:
@@ -14,7 +18,7 @@ class Handler:
             PayloadFormatError: if 'data' is missing or not a list.
             NoValidIdsError: if no valid IDs are found in the payload.
         """
-        
+
         data = payload
 
         ids = []
@@ -75,17 +79,91 @@ class Handler:
         return out
 
     @staticmethod
-    def deduplicate_data(data: list) -> list:
+    def deduplicate_data(data: list[dict]) -> list[dict]:
         """
-        Remove duplicated entries (dictionaries)
+        Remove duplicated entries (dictionaries) and ensure consistent key order.
 
         Args:
             data (list): List of dictionaries
 
         Returns:
-            list: Deduplicated list of dictionaries
+            list: Deduplicated list of dictionaries with consistent key order
+        """
+        if not data:
+            return []
+
+        # Determine consistent key order (from the first dictionary)
+        key_order = list(data[0].keys())
+
+        # Deduplicate using tuple representation
+        seen = set()
+        unique_data = []
+        for d in data:
+            # Ensure dictionary has all keys (fill missing with None)
+            normalized = tuple((k, d.get(k)) for k in key_order)
+            if normalized not in seen:
+                seen.add(normalized)
+                unique_data.append({k: d.get(k) for k in key_order})
+
+        # Log counts
+        logger.info(
+            f"Entries: duplicated {len(data) - len(unique_data)}, "
+            f"original: {len(data)}, "
+            f"deduplicated: {len(unique_data)}"
+        )
+
+        return unique_data
+
+    @staticmethod
+    def create_directory(file_path: str) -> None:
+        """
+        Creates a directory if it doesn't exist.
+
+        Args:
+            file_path (str): Path to the file or directory.
         """
 
-        # Deduplicate using frozenset
-        unique_data = [dict(t) for t in {frozenset(d.items()) for d in data}]
-        return unique_data
+        directory = os.path.dirname(file_path)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+    @staticmethod
+    def list_of_dicts_to_jsonl(data: list[dict], file_path: str) -> None:
+        """
+        Converts a list of dictionaries to JSON Lines format and writes to a file.
+
+        Args:
+            data (list[dict]): List of dictionaries to convert.
+            file_path (str): Path to the output .jsonl file.
+        """
+
+        # Create the directory if it doesn't exist
+        Handler.create_directory(file_path)
+
+        with open(file_path, 'w', encoding='utf-8') as f:
+            for item in data:
+                json_line = json.dumps(item, ensure_ascii=False)
+                f.write(json_line + '\n')
+
+    @staticmethod
+    def list_of_dicts_to_csv(data: list[dict], file_path: str) -> None:
+        """
+        Converts a list of dictionaries to CSV format and writes to a file.
+
+        Args:
+            data (list[dict]): List of dictionaries to convert.
+            file_path (str): Path to the output .csv file.
+        """
+        if not data:
+            raise ValueError("The data list is empty.")
+
+        # Create the directory if it doesn't exist
+        Handler.create_directory(file_path)
+        
+        # Extract headers from keys of the first dictionary
+        headers = data[0].keys()
+        
+        with open(file_path, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=headers)
+            writer.writeheader()
+            writer.writerows(data)
