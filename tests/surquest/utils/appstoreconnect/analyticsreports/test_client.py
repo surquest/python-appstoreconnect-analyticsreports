@@ -73,6 +73,21 @@ class TestClientIntegration(unittest.TestCase):
         data = self.client.download_report_to_dicts("https://invalid-url.com/report.gz")
         assert data is None, "Expected None for invalid URL"
 
+    def test_list_report_dates(self):
+
+        dates = self.client.list_report_dates(
+            app_id=self.test_app_id,
+            report_name=REPORT_NAME,
+            granularity=GRANULARITY,
+        )
+
+        assert isinstance(dates, list), f"Expected list, got {type(dates)}"
+        if dates:
+            assert isinstance(
+                dates[0], str
+            ), f"Expected string in dates list, got {type(dates[0])}"
+
+
     def test_get_data_pipeline(self):
         data = self.client.get_data(
             app_id=self.test_app_id,
@@ -85,3 +100,8 @@ class TestClientIntegration(unittest.TestCase):
             assert isinstance(
                 data[0], dict
             ), f"Expected dict in data rows, got {type(data[0])}"
+
+    def test__get_request(self):
+
+        response = self.client._get_request("https://httpstat.us/400")
+        assert None == response

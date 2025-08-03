@@ -1,4 +1,9 @@
 import unittest
+import tempfile
+import os
+import shutil
+import json
+import csv
 import warnings
 from surquest.utils.appstoreconnect.analyticsreports.handler import Handler
 from surquest.utils.appstoreconnect.analyticsreports.errors import (
@@ -9,6 +14,12 @@ from surquest.utils.appstoreconnect.analyticsreports.errors import (
 
 
 class TestHandler(unittest.TestCase):
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
 
     def test_extract_ids_valid(self):
         payload = [{"id": "123"}, {"id": "456"}, {"id": "789"}]
@@ -65,5 +76,76 @@ class TestHandler(unittest.TestCase):
         result = Handler.deduplicate_data(data)
         assert isinstance(result, list)
         assert len(result) == 2
-        assert {"id": "123", "name": "Alice"} in result
-        assert {"id": "456", "name": "Bob"} in result
+        assert {"id": 123, "name": "Alice"} in result
+        assert {"id": 456, "name": "Bob"} in result
+
+
+
+    def test_create_directory_creates_dir(self):
+        nested_dir = os.path.join(self.temp_dir, "subdir1", "subdir2")
+        file_path = os.path.join(nested_dir, "file.txt")
+
+        assert not os.path.exists(nested_dir)
+
+        Handler.create_directory(file_path)
+
+        assert os.path.exists(nested_dir)
+        assert os.path.isdir(nested_dir)
+
+    def test_create_directory_existing_dir(self):
+        existing_dir = os.path.join(self.temp_dir, "existing_dir")
+        os.makedirs(existing_dir)
+
+        file_path = os.path.join(existing_dir, "file.txt")
+        # Should not raise or fail if directory exists
+        Handler.create_directory(file_path)
+        assert os.path.exists(existing_dir)
+
+    def test_list_of_dicts_to_jsonl_creates_file_with_correct_content(self):
+        data = [
+            {"a": 1, "b": "x"},
+            {"a": 2, "b": "y"},
+        ]
+        file_path = os.path.join(self.temp_dir, "output.jsonl")
+
+        Handler.list_of_dicts_to_jsonl(data, file_path)
+
+        assert os.path.isfile(file_path)
+
+        with open(file_path, "r", encoding="utf-8") as f:
+            lines = f.read().splitlines()
+            assert len(lines) == 2
+            for i, line in enumerate(lines):
+                obj = json.loads(line)
+                assert obj == data[i]
+
+    def test_list_of_dicts_to_csv_creates_file_with_correct_content(self):
+        data = [
+            {"name": "Alice", "age": 30},
+            {"name": "Bob", "age": 25},
+        ]
+        file_path = os.path.join(self.temp_dir, "output.csv")
+
+        Handler.list_of_dicts_to_csv(data, file_path)
+
+        assert os.path.isfile(file_path)
+
+        with open(file_path, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+            assert len(rows) == 2
+            assert rows[0]["name"] == "Alice"
+            assert rows[0]["age"] == "30"  # CSV stores all as strings
+            assert rows[1]["name"] == "Bob"
+            assert rows[1]["age"] == "25"
+
+    def test_list_of_dicts_to_csv_empty_data_raises_value_error(self):
+        data = []
+        file_path = os.path.join(self.temp_dir, "empty.csv")
+
+        try:
+            Handler.list_of_dicts_to_csv(data, file_path)
+        except ValueError as e:
+            assert "data list is empty" in str(e)
+        else:
+            assert False, "ValueError not raised for empty data"

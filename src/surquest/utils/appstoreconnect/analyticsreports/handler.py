@@ -105,7 +105,27 @@ class Handler:
                 seen.add(normalized)
                 unique_data.append({k: d.get(k) for k in key_order})
 
-        # Log counts
+        # Convert string representations of numbers to actual numbers
+        for item in unique_data:
+            for key, value in item.items():
+                if isinstance(value, str):
+                    if "." in value:
+                        try:
+                            # Try converting to float first (handles integers too)
+                            num_value = float(value)
+                            item[key] = num_value
+                        except ValueError:
+                            # Not a numeric string, keep as is
+                            pass
+                    else:
+                        try:
+                            # Try converting to integer
+                            num_value = int(value)
+                            item[key] = num_value
+                        except ValueError:
+                            # Not an integer, keep as is
+                            pass
+
         logger.info(
             f"Entries: duplicated {len(data) - len(unique_data)}, "
             f"original: {len(data)}, "
