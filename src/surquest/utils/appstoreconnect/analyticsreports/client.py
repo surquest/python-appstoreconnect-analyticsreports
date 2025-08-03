@@ -4,21 +4,13 @@ from typing import Dict, Any, Optional, List
 import csv
 import gzip
 import io
-import logging
 
 from ..credentials import Credentials
 from .handler import Handler
 from .enums.category import Category
 from .enums.granularity import Granularity
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-if not logger.hasHandlers():
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter('[%(levelname)s] %(asctime)s - %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+from .ennums.report_name import ReportName
+from .logger import logger
 
 
 class Client:
@@ -182,11 +174,60 @@ class Client:
             logger.exception("An error occurred while processing the report file.")
         return None
 
+    def list_report_types(self, app_id: str, category: Category = None, report_name: str = None) -> list:
+        """
+        Lists available analytics report types for a given app.
+
+        Args:
+            app_id (str): The identifier of the app.
+            report_name (str): Name of the analytics report to retrieve.
+            category (Category): Report category (e.g., SALES, USAGE).
+
+        Returns:
+            list: A list of dictionaries, where each dictionary represents a report type.
+                  Example structure:
+                    [{
+                        "category":Category.APP_USAGE,
+                        "name":"App Store Installation and Deletion Detailed"
+                    }]
+        """
+
+        logger.info("Starting list_report_types process")
+        logger.debug(f"Parameters: app_id={app_id}")
+
+        report_request_ids: list = []
+
+        # Step 1: Fetch report requests IDs
+        report_requests = self.read_report_requests(app_id=app_id)
+        report_request_ids.extend(Handler.extract_ids(report_requests))
+        logger.debug(f"Found report request IDs: {report_request_ids}")
+
+        if not report_request_ids:
+            logger.error(f"No report requests found for app: {app_id}")
+            raise Exception(f"No report requests found for app: {app_id}")
+
+        query_params = {}
+        if category:
+            query_params["filter[category]"] = category.value
+        if report_name:
+            query_params["filter[name]"] = report_name
+
+        if query_params:
+            logger.debug(f"Query parameters: {query_params}")
+
+        # Step 2: Get report list for the request
+        for report_request_id in report_request_ids:
+            reports = self.read_report_for_specific_request(
+                request_id=report_request_id,
+                params=query_params # Filter by category and report name if provided
+            )
+            return reports
+
+
     def get_data(
         self,
         app_id: str,
-        report_name: str,
-        category: Category,
+        report_name: ReportName,
         granularity: Granularity,
         dates: set = set()
     ) -> list:
@@ -202,8 +243,7 @@ class Client:
 
         Args:
             app_id (str): The App Store Connect application ID.
-            report_name (str): Name of the analytics report to retrieve.
-            category (Category): Report category (e.g., SALES, USAGE).
+            report_name (ReportName): Name of the analytics report to retrieve.
             granularity (Granularity): Data granularity (e.g., DAILY, WEEKLY).
             dates (set, optional): Set of dates to filter the report instances. Defaults to empty set.
 
@@ -214,37 +254,24 @@ class Client:
         logger.debug(f"Parameters: app_id={app_id}, report_name={report_name}, category={category}, granularity={granularity}, dates={dates}")
 
         data: list = []
-        report_request_ids: list = []
         report_ids: list = []
         instance_ids: list = []
         urls: list = []
 
-        # Step 1: Fetch report requests IDs
-        report_requests = self.read_report_requests(app_id=app_id)
-        report_request_ids.extend(Handler.extract_ids(report_requests))
-        logger.debug(f"Found report request IDs: {report_request_ids}")
-
-        if not report_request_ids:
-            logger.error(f"No report requests found for app: {app_id}")
-            raise Exception(f"No report requests found for app: {app_id}")
-
-        # Step 2: Get report list for the request
-        for report_request_id in report_request_ids:
-            reports = self.read_report_for_specific_request(
-                request_id=report_request_id,
-                params={
-                    "filter[category]": category.value,
-                    "filter[name]": report_name
-                }
-            )
-            reports_ids = Handler.extract_ids(reports)
-            if not reports_ids:
-                logger.warning(f"No reports found for app: {app_id} and report request id: {report_request_id}")
-                continue
-            else:
-                report_ids.extend(reports_ids)
-        logger.debug(f"Collected report IDs: {report_ids}")
-
+        reports = self.list_report_types(
+            app_id=app_id,
+            category=report_name.category,
+            report_name=report_name.value
+        )
+        
+        reports_ids = Handler.extract_ids(reports)
+        
+        if not reports_ids:
+            logger.warning(f"No reports found for app: {app_id} and report request id: {report_request_id}")
+            continue
+        
+        report_ids.extend(reports_ids)
+       
         if not report_ids:
             logger.error(f"No reports found for app: {app_id}")
             raise Exception(f"No reports found for app: {app_id}")
@@ -306,3 +333,5 @@ class Client:
 
         logger.info(f"Total records collected: {len(data)}")
         return data
+
+

@@ -36,9 +36,13 @@ class Handler:
 
 
     @staticmethod
-    def extract_attribute_values(payload: dict, attribute: str) -> list[str]:
+    def extract_attribute_values(payload: dict, attribute: str | None = None) -> list[str]:
         """
         Extracts a list of 'attribute' values from each item's attributes in the payload.
+
+        Args:
+            payload (dict): Dictionary representing the payload.
+            attribute (str, optional): Name of the attribute to extract. Defaults to None.
 
         Raises:
             PayloadFormatError: if 'data' is missing or not a list.
@@ -49,7 +53,7 @@ class Handler:
         if not isinstance(data, list):
             raise PayloadFormatError(f"'data' key must be a list in the payload: {payload}")
 
-        urls = []
+        out = []
         for item in data:
             if not isinstance(item, dict):
                 warnings.warn(f"Skipped: item is not a dictionary: {item}")
@@ -59,15 +63,34 @@ class Handler:
             if not isinstance(attributes, dict):
                 warnings.warn(f"Skipped: missing or malformed 'attributes' in item: {item}")
                 continue
+            
+            if attribute is not None:
+                val = attributes.get(attribute)
+                if not val:
+                    warnings.warn(f"Skipped: missing or empty `{attribute}` in attributes: {attributes}")
+                    continue
+                out.append(val)
 
-            url = attributes.get(attribute)
-            if not url:
-                warnings.warn(f"Skipped: missing or empty `{attribute}` in attributes: {attributes}")
-                continue
+            else:
+                out.append(attributes)
 
-            urls.append(url)
-
-        if not urls:
+        if not out:
             raise NoValidUrlsError(f"No valid `{attribute}` found in the payload.")
 
-        return urls
+        return out
+
+    @staticmethod
+    def deduplicate_data(data: list) -> list:
+        """
+        Remove duplicated entries (dictionaries)
+
+        Args:
+            data (list): List of dictionaries
+
+        Returns:
+            list: Deduplicated list of dictionaries
+        """
+
+        # Deduplicate using frozenset
+        unique_data = [dict(t) for t in {frozenset(d.items()) for d in data}]
+        return unique_data

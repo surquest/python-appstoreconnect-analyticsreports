@@ -2,7 +2,7 @@
     "recommendations": [
         "ms-python.python",
         "ms-toolsai.jupyter",
-        
+        "ms-python.black-formatter"
     ],
     "unwantedRecommendations": []
 }

@@ -94,3 +94,24 @@ class TestHandler(unittest.TestCase):
         payload = {"data": [{"attributes": {"url": ""}}, {"attributes": {"url": "http://example.com/report1"}}]}
         urls = Handler.extract_attribute_values(payload, "url")
         self.assertEqual(urls, ["http://example.com/report1"])
+
+    def test_deduplicate_data_with_duplicates(self):
+        
+        data_with_duplicates = [
+            {"id": 1, "name": "A", "value": 10},
+            {"id": 2, "name": "B", "value": 20},
+            {"id": 1, "name": "A", "value": 10},  # Duplicate of the first entry
+            {"id": 3, "name": "C", "value": 30},
+            {"id": 2, "name": "B", "value": 20},  # Duplicate of the second entry
+            {"id": 1, "value": 10, "name": "A"},  # Duplicate with different key order
+        ]
+        expected_deduplicated_data = [
+            {"id": 1, "name": "A", "value": 10},
+            {"id": 2, "name": "B", "value": 20},
+            {"id": 3, "name": "C", "value": 30},
+        ]
+        # We sort the unique data because the order of unique_data might vary based on set iteration
+        deduplicated_data = Handler.deduplicate_data(data_with_duplicates)
+        
+        assert len(deduplicated_data) == len(expected_deduplicated_data), \
+            f"Expected {len(expected_deduplicated_data)} unique entries, got {len(deduplicated_data)}"
