@@ -126,7 +126,13 @@ class Client:
         """Downloads a gzipped CSV report and parses it into a list of dictionaries."""
         try:
             csv_content = self._download_gzipped_csv(report_url)
-            return self._parse_csv_to_dicts(csv_content, normalize)
+            data = self._parse_csv_to_dicts(csv_content, normalize)
+            out = []
+            for item in data:
+                item.update({"url": report_url})
+                out.append(item)
+            print(out)
+            return out
         except Exception:
             logger.exception("Failed to download or parse report")
             return None
@@ -228,11 +234,18 @@ class Client:
         instance_ids = self._fetch_instance_ids(report_ids, granularity, dates)
         urls = self._fetch_segment_urls(instance_ids)
 
-        for url in urls:
+        report_dates = dict()
+        for url in urls: # URLs are sorted older are processed before newer
             segment_data = self.download_report_to_dicts(url)
             if segment_data:
+                # -------------------------------------------------------------- #
+                # Important: This part requires patch
+                # - for each dataset we have to analyze set of avaialble dates
+                #   and for each date we ahve to add them to report dates 
+                #   or overwrite it in report_dates
+                # -------------------------------------------------------------- #
                 data.extend(segment_data)
-
+                
         return Handler.deduplicate_data(data)
 
     # ----------------- Private Steps for get_data -----------------
@@ -265,4 +278,4 @@ class Client:
         for instance_id in instance_ids:
             segments = self.read_segments_for_report(instance_id)
             urls.extend(Handler.extract_attribute_values(segments, attribute="url"))
-        return urls
+        return sorted(urls)

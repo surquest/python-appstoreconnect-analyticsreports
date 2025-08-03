@@ -117,6 +117,8 @@ class Handler:
                         except ValueError:
                             # Not a numeric string, keep as is
                             pass
+                    elif value in [""]:
+                        item[key] = None
                     else:
                         try:
                             # Try converting to integer
