@@ -129,9 +129,8 @@ class Client:
             data = self._parse_csv_to_dicts(csv_content, normalize)
             out = []
             for item in data:
-                item.update({"url": report_url})
+                # item.update({"url": report_url})
                 out.append(item)
-            print(out)
             return out
         except Exception:
             logger.exception("Failed to download or parse report")
@@ -156,7 +155,7 @@ class Client:
         reader = csv.DictReader(csv_file, delimiter="\t")
         if normalize:
             return [
-                {key.lower().replace(" ", "_"): value for key, value in row.items()}
+                {key.lower().replace(" ", "_").replace("-", "_"): value for key, value in row.items()}
                 for row in reader
             ]
         return list(reader)
@@ -182,6 +181,8 @@ class Client:
             instances = self.read_list_of_instances_of_report(
                 report_id, params={"filter[granularity]": granularity.value}
             )
+            if not instances:
+                raise APIClientError(f"No instances found for report: {report_id}")
             available_dates = Handler.extract_attribute_values(
                 instances, attribute="processingDate"
             )
@@ -234,9 +235,11 @@ class Client:
         instance_ids = self._fetch_instance_ids(report_ids, granularity, dates)
         urls = self._fetch_segment_urls(instance_ids)
 
-        report_dates = dict()
+        date_slices = dict()
+        
         for url in urls: # URLs are sorted older are processed before newer
             segment_data = self.download_report_to_dicts(url)
+        
             if segment_data:
                 # -------------------------------------------------------------- #
                 # Important: This part requires patch
@@ -244,8 +247,26 @@ class Client:
                 #   and for each date we ahve to add them to report dates 
                 #   or overwrite it in report_dates
                 # -------------------------------------------------------------- #
-                data.extend(segment_data)
                 
+                available_dates = Handler.get_distinct_values(
+                    data=segment_data,
+                    key='date'
+                )
+
+                for avaialble_date in available_dates:
+
+                    data_slice = Handler.filter_list_of_dicts(
+                        data=segment_data,
+                        attribute='date',
+                        value=avaialble_date,
+                        comparator='=='
+                    )
+
+                    date_slices[avaialble_date] = data_slice
+
+        for date, data_slice in date_slices.items():
+            data.extend(data_slice)
+        
         return Handler.deduplicate_data(data)
 
     # ----------------- Private Steps for get_data -----------------

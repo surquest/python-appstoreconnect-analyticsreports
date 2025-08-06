@@ -69,17 +69,17 @@ class TestHandler(unittest.TestCase):
 
     def test_deduplicate_data(self):
         data = [
-            {"id": "123", "name": "Alice"},
-            {"id": "123", "name": "Alice"},
-            {"id": "456", "name": "Bob"},
+            {"id": "123", "name": "Alice", "age": 30.5},
+            {"id": "456", "name": "Bob", "age": "25"},
+            {"id": "123", "name": "Alice", "age": "30.5"},
+            {"id": "123", "name": "Alice", "age": "30.5"},
+            {"id": "456", "name": "Bob", "age": 25},
         ]
         result = Handler.deduplicate_data(data)
         assert isinstance(result, list)
         assert len(result) == 2
-        assert {"id": 123, "name": "Alice"} in result
-        assert {"id": 456, "name": "Bob"} in result
-
-
+        assert {"id": 123, "name": "Alice", "age": 30.5} in result
+        assert {"id": 456, "name": "Bob", "age": 25} in result
 
     def test_create_directory_creates_dir(self):
         nested_dir = os.path.join(self.temp_dir, "subdir1", "subdir2")
@@ -149,3 +149,36 @@ class TestHandler(unittest.TestCase):
             assert "data list is empty" in str(e)
         else:
             assert False, "ValueError not raised for empty data"
+
+    def test_get_distinct_values_for_attribute(self):
+        
+        data = [
+            {'id': 1, 'name': 'Alice', 'country': 'USA'},
+            {'id': 2, 'name': 'Bob', 'country': 'UK'},
+            {'id': 3, 'name': 'Alice', 'country': 'USA'},
+            {'id': 4, 'name': 'David', 'country': None},
+        ]
+
+        result = Handler.get_distinct_values(data, 'country')
+        assert sorted(result) == sorted(['USA', 'UK'])
+
+    def test_filter_list_of_dicts(self):
+
+        data = [
+            {'id': 1, 'name': 'Alice', 'country': 'USA'},
+            {'id': 2, 'name': 'Bob', 'country': 'UK'},
+            {'id': 3, 'name': 'Alice', 'country': 'USA'},
+            {'id': 4, 'name': 'David', 'country': None},
+        ]
+
+        expected = [
+            {'id': 2, 'name': 'Bob', 'country': 'UK'}
+        ]
+
+        result = Handler.filter_list_of_dicts(
+            data=data, 
+            attribute='country', 
+            value='UK'
+        )
+        
+        assert result == expected
