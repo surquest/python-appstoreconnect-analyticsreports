@@ -269,6 +269,65 @@ class Client:
         
         return Handler.deduplicate_data(data)
 
+    def fetch_customer_reviews(
+        self,
+        app_id: str,
+        last_known_customer_review_id: Optional[str] = None,
+        params: Optional[Dict[str, Any]] = None,
+        max_iterations: Optional[int] = None,
+
+    ) -> List[Dict[str, Any]]:
+        """
+        Fetches all customer reviews for a given app_id.
+
+        Args:
+            app_id (str): The ID of the app.
+            last_known_customer_review_id (Optional[str]): If provided, stops pagination once this review ID is found.
+            params (Optional[Dict[str, Any]]): Query parameters for the request (default: sort=-createdDate, limit=200).
+            max_iterations (Optional[int]): Max number of pagination requests (for integration testing). Unlimited by default.
+
+        Returns:
+            List[Dict[str, Any]]: A list of customer review records.
+        """
+        results = []
+        seen_ids = set()
+        found_last_known = False
+        iterations = 0
+
+        query_params = {
+            "limit": 200,
+            "sort": "-createdDate",
+        }
+        if params:
+            query_params.update(params)
+
+        url = f"{self.BASE_URL}/apps/{app_id}/customerReviews"
+
+        while url and not found_last_known:
+            if max_iterations is not None and iterations >= max_iterations:
+                logger.info(f"Reached max iteration limit: {max_iterations}")
+                break
+
+            response = self._get_request(url, query_params)
+            if not response:
+                break
+
+            data = response.get("data", [])
+            for item in data:
+                review_id = item.get("id")
+                if last_known_customer_review_id and review_id == last_known_customer_review_id:
+                    found_last_known = True
+                    break
+                if review_id not in seen_ids:
+                    results.append(item)
+                    seen_ids.add(review_id)
+
+            url = response.get("links", {}).get("next")
+            query_params = None  # Only pass params on the first request
+            iterations += 1
+
+        return results
+
     # ----------------- Private Steps for get_data -----------------
 
     def _fetch_report_ids(self, app_id: str, report_name: ReportName) -> List[str]:

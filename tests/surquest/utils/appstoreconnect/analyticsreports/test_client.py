@@ -105,3 +105,15 @@ class TestClientIntegration(unittest.TestCase):
 
         response = self.client._get_request("https://httpstat.us/400")
         assert None == response
+        
+    def test_fetch_customer_reviews(self):
+        reviews = self.client.fetch_customer_reviews(
+            app_id=self.test_app_id,
+            max_iterations=2,  # Limit for test efficiency
+        )
+
+        assert isinstance(reviews, list), f"Expected list, got {type(reviews)}"
+        if reviews:
+            first = reviews[0]
+            assert isinstance(first, dict), f"Expected dict, got {type(first)}"
+            assert "id" in first, "Each review should contain an 'id' field"
