@@ -132,6 +132,9 @@ class ReportName(str, Enum):
     BLUETOOTH_LE_CONNECTIONS_PER_APP = ("Bluetooth LE Connections Per App",  Category.FRAMEWORK_USAGE)
     BLUETOOTH_LE_DISCONNECTION_RESULTS = ("Bluetooth LE Disconnection Results",  Category.FRAMEWORK_USAGE)
     HOME_SCREEN_WIDGET_INSTALLS = ("Home Screen Widget Installs",  Category.FRAMEWORK_USAGE)
+    
+    # None standard option for customer reviews fetched via https://api.appstoreconnect.apple.com/v1/apps/{app_id}/customerReviews"
+    APP_CUSTOMER_REVIEWS = ("App Customer reviews", None)
 
     def __new__(cls, value: str, category: Category) -> "ReportName":
         obj = str.__new__(cls, value)

@@ -61,7 +61,7 @@ APPSTORE_PRIVATE_KEY_PATH=AuthKey_XXXXXXXXXX.p8
 
 ```python
 from surquest.utils.appstoreconnect.credentials import Credentials
-from surquest.utils.appstoreconnect.analyticsreports import Client
+from surquest.utils.appstoreconnect.analyticsreports.client import Client as AnalyticsClient
 
 credentials = Credentials(
     issuer_id="your_issuer_id",
