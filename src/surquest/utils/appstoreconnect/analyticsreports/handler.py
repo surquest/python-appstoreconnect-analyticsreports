@@ -251,6 +251,7 @@ class Handler:
     @staticmethod
     def get_customer_reviews(api_response_payload, app_id: str, last_known_customer_review_id: str | None = None, results: list = [], seen_ids: list = []):
 
+        found_last_known = False
         data = api_response_payload.get("data", [])
 
         review_responses = dict()
@@ -262,8 +263,11 @@ class Handler:
                 
                 review_id = item.get("id")
                 
-                if last_known_customer_review_id and review_id == last_known_customer_review_id:
+                if last_known_customer_review_id \
+                    and review_id == last_known_customer_review_id:
+                    
                     found_last_known = True
+                    
                     break
                 
                 if review_id not in seen_ids:
@@ -292,4 +296,4 @@ class Handler:
 
                     seen_ids.add(review_id)
         
-        return results, seen_ids 
+        return results, seen_ids, found_last_known

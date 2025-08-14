@@ -317,7 +317,7 @@ class Client:
 
             data = response.get("data", [])
 
-            results, seen_ids = Handler.get_customer_reviews(
+            results, seen_ids, found_last_known = Handler.get_customer_reviews(
                 api_response_payload=response,
                 app_id=app_id,
                 results=results,
