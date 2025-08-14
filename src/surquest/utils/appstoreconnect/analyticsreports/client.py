@@ -297,6 +297,9 @@ class Client:
         query_params = {
             "limit": 200,
             "sort": "-createdDate",
+            "include": "response",
+            "fields[customerReviewResponses]": "responseBody,lastModifiedDate,state,review",
+            "fields[customerReviews]": "rating,title,body,reviewerNickname,createdDate,territory,response"
         }
         if params:
             query_params.update(params)
@@ -313,14 +316,14 @@ class Client:
                 break
 
             data = response.get("data", [])
-            for item in data:
-                review_id = item.get("id")
-                if last_known_customer_review_id and review_id == last_known_customer_review_id:
-                    found_last_known = True
-                    break
-                if review_id not in seen_ids:
-                    results.append(item)
-                    seen_ids.add(review_id)
+
+            results, seen_ids = Handler.get_customer_reviews(
+                api_response_payload=response,
+                app_id=app_id,
+                results=results,
+                seen_ids=seen_ids,
+                last_known_customer_review_id=last_known_customer_review_id
+            )
 
             url = response.get("links", {}).get("next")
             query_params = None  # Only pass params on the first request

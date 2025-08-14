@@ -247,3 +247,49 @@ class Handler:
             item for item in data
             if attribute in item and func(item[attribute], value)
         ]
+
+    @staticmethod
+    def get_customer_reviews(api_response_payload, app_id: str, last_known_customer_review_id: str | None = None, results: list = [], seen_ids: list = []):
+
+        data = api_response_payload.get("data", [])
+
+        review_responses = dict()
+        
+        for review_response in api_response_payload.get("included", []):
+            review_responses[review_response.get("id")] = review_response
+
+        for item in data:
+                
+                review_id = item.get("id")
+                
+                if last_known_customer_review_id and review_id == last_known_customer_review_id:
+                    found_last_known = True
+                    break
+                
+                if review_id not in seen_ids:
+                    
+                    response_id = None
+
+                    if item.get("relationships", {}).get("response", {}).get("data"):
+
+                        response_id = item.get("relationships", {}).get("response", {}).get("data", {}).get("id")
+                    
+                    review = {
+                        "id": review_id,
+                        "app_id": int(app_id),
+                        "rating": item.get("attributes", {}).get("rating"),
+                        "title": item.get("attributes", {}).get("title"),
+                        "body": item.get("attributes", {}).get("body"),
+                        "reviewer_nickname": item.get("attributes", {}).get("reviewerNickname"),
+                        "created_date": item.get("attributes", {}).get("createdDate"),
+                        "territory": item.get("attributes", {}).get("territory"),
+                        "response_body": review_responses.get(response_id, {}).get("attributes", {}).get("responseBody"),
+                        "response_last_modified_date": review_responses.get(response_id, {}).get("attributes", {}).get("lastModifiedDate"),
+                        "response_state": review_responses.get(response_id, {}).get("attributes", {}).get("state")
+                    }
+
+                    results.append(review)
+
+                    seen_ids.add(review_id)
+        
+        return results, seen_ids 
