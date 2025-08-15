@@ -76,6 +76,22 @@ class Client:
             logger.error(f"Request Error: {e}")
         return None
 
+    def _post_request(
+        self, url: str, data: Optional[Dict[str, Any]] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Performs a POST request and returns JSON response or None."""
+        headers = self._get_headers()
+        logger.debug(f"POST {url} | Data: {data}")
+        try:
+            response = self.session.post(url, headers=headers, json=data)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP Error: {e.response.status_code} - {e.response.text}")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request Error: {e}")
+        return None
+
     def _get_resource(
         self, resource_path: str, params: Optional[Dict[str, Any]] = None
     ) -> Optional[Dict[str, Any]]:
@@ -98,9 +114,36 @@ class Client:
 
     # ----------------- Public API Methods -----------------
 
+    def create_reports_request(
+        self, app_id: str, access_type: str = "ONGOING" # or ONE_TIME_SNAPSHOT
+    ) -> Dict[str, Any]:
+
+        url = f"{self.BASE_URL}/analyticsReportRequests"
+
+        return self._post_request(
+            url,
+            data={
+                "data": {
+                    "attributes": {"accessType": access_type},
+                    "relationships": {"app": {"data": {"id": app_id, "type": "apps"}}},
+                    "type": "analyticsReportRequests",
+                }
+            },
+        )
+
     def read_report_requests(
-        self, app_id: str, params: Optional[Dict[str, Any]] = None
+        self,
+        app_id: str,
+        access_type: str = "ONGOING", # or ONE_TIME_SNAPSHOT
+        params: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
+    
+        if not params:
+            params={
+                "filter[accessType]": access_type
+            }
+        else:
+            params["filter[accessType]"] = access_type
         return self._paginate(f"apps/{app_id}/analyticsReportRequests", params)
 
     def read_report_for_specific_request(
@@ -155,7 +198,10 @@ class Client:
         reader = csv.DictReader(csv_file, delimiter="\t")
         if normalize:
             return [
-                {key.lower().replace(" ", "_").replace("-", "_"): value for key, value in row.items()}
+                {
+                    key.lower().replace(" ", "_").replace("-", "_"): value
+                    for key, value in row.items()
+                }
                 for row in reader
             ]
         return list(reader)
@@ -195,6 +241,7 @@ class Client:
         app_id: str,
         category: Optional[Category] = None,
         report_name: Optional[ReportName] = None,
+        access_type: str = "ONGOING", # or ONE_TIME_SNAPSHOT
     ) -> List[Dict[str, Any]]:
         query_params = {}
         if category:
@@ -202,7 +249,7 @@ class Client:
         if report_name:
             query_params["filter[name]"] = report_name.value
 
-        report_requests = self.read_report_requests(app_id)
+        report_requests = self.read_report_requests(app_id=app_id, access_type=access_type)
         report_ids = Handler.extract_ids(report_requests)
         if not report_ids:
             raise APIClientError(f"No report requests found for app: {app_id}")
@@ -220,11 +267,13 @@ class Client:
         report_name: ReportName,
         granularity: Granularity = Granularity.DAILY,
         dates: Optional[Set[str]] = None,
+        access_type: str = "ONGOING", # or ONE_TIME_SNAPSHOT
     ) -> List[Dict[str, str]]:
         dates = dates or set()
         data: List[Dict[str, str]] = []
 
-        report_ids = self._fetch_report_ids(app_id, report_name)
+        report_ids = self._fetch_report_ids(app_id, report_name, access_type=access_type)
+        
         if not dates:
             dates = set(
                 self.list_report_dates(
@@ -236,37 +285,36 @@ class Client:
         urls = self._fetch_segment_urls(instance_ids)
 
         date_slices = dict()
-        
-        for url in urls: # URLs are sorted older are processed before newer
+
+        for url in urls:  # URLs are sorted older are processed before newer
             segment_data = self.download_report_to_dicts(url)
-        
+
             if segment_data:
                 # -------------------------------------------------------------- #
                 # Important: This part requires patch
                 # - for each dataset we have to analyze set of avaialble dates
-                #   and for each date we ahve to add them to report dates 
+                #   and for each date we ahve to add them to report dates
                 #   or overwrite it in report_dates
                 # -------------------------------------------------------------- #
-                
+
                 available_dates = Handler.get_distinct_values(
-                    data=segment_data,
-                    key='date'
+                    data=segment_data, key="date"
                 )
 
                 for avaialble_date in available_dates:
 
                     data_slice = Handler.filter_list_of_dicts(
                         data=segment_data,
-                        attribute='date',
+                        attribute="date",
                         value=avaialble_date,
-                        comparator='=='
+                        comparator="==",
                     )
 
                     date_slices[avaialble_date] = data_slice
 
         for date, data_slice in date_slices.items():
             data.extend(data_slice)
-        
+
         return Handler.deduplicate_data(data)
 
     def fetch_customer_reviews(
@@ -275,7 +323,6 @@ class Client:
         last_known_customer_review_id: Optional[str] = None,
         params: Optional[Dict[str, Any]] = None,
         max_iterations: Optional[int] = None,
-
     ) -> List[Dict[str, Any]]:
         """
         Fetches all customer reviews for a given app_id.
@@ -299,7 +346,7 @@ class Client:
             "sort": "-createdDate",
             "include": "response",
             "fields[customerReviewResponses]": "responseBody,lastModifiedDate,state,review",
-            "fields[customerReviews]": "rating,title,body,reviewerNickname,createdDate,territory,response"
+            "fields[customerReviews]": "rating,title,body,reviewerNickname,createdDate,territory,response",
         }
         if params:
             query_params.update(params)
@@ -322,7 +369,7 @@ class Client:
                 app_id=app_id,
                 results=results,
                 seen_ids=seen_ids,
-                last_known_customer_review_id=last_known_customer_review_id
+                last_known_customer_review_id=last_known_customer_review_id,
             )
 
             url = response.get("links", {}).get("next")
@@ -333,9 +380,9 @@ class Client:
 
     # ----------------- Private Steps for get_data -----------------
 
-    def _fetch_report_ids(self, app_id: str, report_name: ReportName) -> List[str]:
+    def _fetch_report_ids(self, app_id: str, report_name: ReportName, access_type: str = "ONGOING") -> List[str]:
         reports = self.list_reports(
-            app_id, category=report_name.category, report_name=report_name
+            app_id, category=report_name.category, report_name=report_name, access_type=access_type
         )
         return Handler.extract_ids(reports)
 
