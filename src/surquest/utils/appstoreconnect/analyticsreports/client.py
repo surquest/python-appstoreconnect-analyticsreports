@@ -108,7 +108,10 @@ class Client:
             response = self._get_request(url, params)
             if response and "data" in response:
                 results.extend(response["data"])
-            url = response.get("links", {}).get("next")
+            if response:
+                url = response.get("links", {}).get("next")
+            else:
+                url = None
             params = None  # subsequent pages include params in URL
         return results
 
