@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "surquest-utils-appstoreconnect-analyticsreports"
-version = "0.0.1rc7"
+version = "0.0.1rc8"
 description = "Convenient interface to **download Analytics Reports** from the [App Store Connect API](https://developer.apple.com/documentation/appstoreconnectapi). It handles authentication using JWT, manages requests, and retrieves analytics data for app usage, sales, crashes, and more."
 authors = [
     {name= "Michal Švarc", email= "michal.svarc@surquest.com"}
