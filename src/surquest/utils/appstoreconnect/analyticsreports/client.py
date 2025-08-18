@@ -298,29 +298,36 @@ class Client:
             logger.info(f"Data downloaded from {url}")
             logger.info(f"Count of rows: {len(segments_data[url_key])}")
 
-        for key, segment_data in segments_data.items():
+        if access_type == "ONGOING":
 
-            if segment_data:
+            for key, segment_data in segments_data.items():
 
-                available_dates = Handler.get_distinct_values(
-                    data=segment_data, key="date"
-                )
+                if segment_data:
 
-                for available_date in available_dates:
-
-                    data_slice = Handler.filter_list_of_dicts(
-                        data=segment_data,
-                        attribute="date",
-                        value=available_date,
-                        comparator="==",
+                    available_dates = Handler.get_distinct_values(
+                        data=segment_data, key="date"
                     )
 
-                    date_slices[available_date] = data_slice
+                    for available_date in available_dates:
 
-            logger.info(f"Data processed for url: {key}")
+                        data_slice = Handler.filter_list_of_dicts(
+                            data=segment_data,
+                            attribute="date",
+                            value=available_date,
+                            comparator="==",
+                        )
 
-        for date, data_slice in date_slices.items():
-            data.extend(data_slice)
+                        date_slices[available_date] = data_slice
+
+                logger.info(f"Data processed for url: {key}")
+
+            for date, data_slice in date_slices.items():
+                data.extend(data_slice)
+
+        else:
+            
+            for segment_data in segments_data.values():
+                data.extend(segment_data)
 
         return Handler.deduplicate_data(data)
 
