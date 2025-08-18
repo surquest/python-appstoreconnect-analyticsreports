@@ -286,34 +286,38 @@ class Client:
 
         instance_ids = self._fetch_instance_ids(report_ids, granularity, dates)
         urls = self._fetch_segment_urls(instance_ids)
-
+        segments_data = dict()
         date_slices = dict()
 
-        for url in urls:  # URLs are sorted older are processed before newer
-            segment_data = self.download_report_to_dicts(url)
+        logger.info(f"Fetching for {len(urls.keys())} segments.")
+
+        for url_key, url in urls.items():  # URLs are sorted older are processed before newer
+            
+            segments_data[url_key] = self.download_report_to_dicts(url)
+
+            logger.info(f"Data downloaded from {url}")
+            logger.info(f"Count of rows: {len(segments_data[url_key])}")
+
+        for key, segment_data in segments_data.items():
 
             if segment_data:
-                # -------------------------------------------------------------- #
-                # Important: This part requires patch
-                # - for each dataset we have to analyze set of avaialble dates
-                #   and for each date we ahve to add them to report dates
-                #   or overwrite it in report_dates
-                # -------------------------------------------------------------- #
 
                 available_dates = Handler.get_distinct_values(
                     data=segment_data, key="date"
                 )
 
-                for avaialble_date in available_dates:
+                for available_date in available_dates:
 
                     data_slice = Handler.filter_list_of_dicts(
                         data=segment_data,
                         attribute="date",
-                        value=avaialble_date,
+                        value=available_date,
                         comparator="==",
                     )
 
-                    date_slices[avaialble_date] = data_slice
+                    date_slices[available_date] = data_slice
+
+            logger.info(f"Data processed for url: {key}")
 
         for date, data_slice in date_slices.items():
             data.extend(data_slice)
@@ -406,9 +410,16 @@ class Client:
                 instance_ids.extend(ids)
         return instance_ids
 
-    def _fetch_segment_urls(self, instance_ids: List[str]) -> List[str]:
-        urls: List[str] = []
+    def _fetch_segment_urls(self, instance_ids: List[str]) -> dict:
+        urls: dict = {}
+
         for instance_id in instance_ids:
             segments = self.read_segments_for_report(instance_id)
-            urls.extend(Handler.extract_attribute_values(segments, attribute="url"))
-        return sorted(urls)
+            segment_urls = Handler.extract_attribute_values(segments, attribute="url")
+            
+            for segment_url in segment_urls:
+
+                url_key = segment_url.split("?")[0]
+                urls[url_key] = segment_url
+        
+        return urls
