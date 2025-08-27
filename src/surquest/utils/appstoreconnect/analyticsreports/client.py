@@ -292,10 +292,10 @@ class Client:
         logger.info(f"Fetching for {len(urls.keys())} segments.")
 
         for url_key, url in urls.items():  # URLs are sorted older are processed before newer
-            
+
+            logger.info(f"Data downloaded from {url}")            
             segments_data[url_key] = self.download_report_to_dicts(url)
 
-            logger.info(f"Data downloaded from {url}")
             logger.info(f"Count of rows: {len(segments_data[url_key])}")
 
         if access_type == "ONGOING":
@@ -421,12 +421,19 @@ class Client:
         urls: dict = {}
 
         for instance_id in instance_ids:
-            segments = self.read_segments_for_report(instance_id)
-            segment_urls = Handler.extract_attribute_values(segments, attribute="url")
             
-            for segment_url in segment_urls:
+            try:
+                segments = self.read_segments_for_report(instance_id)
+                segment_urls = Handler.extract_attribute_values(segments, attribute="url")
+                
+                for segment_url in segment_urls:
 
-                url_key = segment_url.split("?")[0]
-                urls[url_key] = segment_url
-        
+                    url_key = segment_url.split("?")[0]
+                    urls[url_key] = segment_url
+            except BaseException as e:
+                logger.warn(e)
+
+        if len(urls.keys()) < 1:
+            raise ValueError("No segments URL available")
+            
         return urls
